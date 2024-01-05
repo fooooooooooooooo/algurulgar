@@ -1,0 +1,18 @@
+[package]
+name = "algurulgar"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow.workspace = true
+atomic_float.workspace = true
+bdf = { git = "https://github.com/fooooooooooooooo/rust-bdf", version = "0.7.0" }
+glium.workspace = true
+glutin.workspace = true
+glutin-winit.workspace = true
+log = "0.4.20"
+nalgebra.workspace = true
+pretty_env_logger = "0.5.0"
+rand.workspace = true
+raw-window-handle.workspace = true
+winit.workspace = true
