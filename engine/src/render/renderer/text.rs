@@ -2,12 +2,13 @@ use std::marker::Copy;
 use std::rc::Rc;
 
 use glium::index::PrimitiveType;
-use glium::{implement_vertex, Display, Frame, IndexBuffer, VertexBuffer};
+use glium::uniforms::MagnifySamplerFilter;
+use glium::{implement_vertex, uniform, Display, Frame, IndexBuffer, VertexBuffer};
 use glutin::surface::WindowSurface;
-use nalgebra::{Matrix4, Vector2};
+use nalgebra::Matrix4;
 
-use crate::math::{Position, Size};
-use crate::render::renderer::{copy_and_draw, CameraUniforms, MAX_VERTICES, QUAD_INDEX_ARRAY};
+use crate::math::{Position, Size, ViewProjection};
+use crate::render::renderer::{copy_and_draw, MAX_VERTICES, QUAD_INDEX_ARRAY};
 use crate::render::shader::Shader;
 use crate::render::text::font::FontBitmap;
 use crate::{vec2, vec3, vec4, Color};
@@ -27,10 +28,12 @@ pub struct TextRenderer {
   vertex_array: Vec<TextVertex>,
   vertex_buffer: VertexBuffer<TextVertex>,
   index_buffer: IndexBuffer<u16>,
+  shader: Shader,
+  font: Rc<FontBitmap>,
 }
 
 impl TextRenderer {
-  pub fn new(display: &Display<WindowSurface>) -> Self {
+  pub fn new(display: &Display<WindowSurface>, shader: Shader, font: Rc<FontBitmap>) -> Self {
     let vertex_array = Vec::with_capacity(MAX_VERTICES);
     let vertex_buffer = VertexBuffer::empty_dynamic(display, MAX_VERTICES).unwrap();
 
@@ -40,14 +43,15 @@ impl TextRenderer {
       vertex_buffer,
       vertex_array,
       index_buffer,
+      shader,
+      font,
     }
   }
 
   pub fn draw_text(
     &mut self,
-    shader: &Shader,
     frame: &mut Frame,
-    camera_uniforms: &CameraUniforms,
+    view_projection: &ViewProjection,
     position: Position,
     params: &TextParams,
     text: &str,
@@ -58,14 +62,13 @@ impl TextRenderer {
     let scaling = Matrix4::identity().prepend_nonuniform_scaling(&size);
     let transform = translation * scaling;
 
-    self.draw_text_transform(shader, frame, camera_uniforms, transform, params, text);
+    self.draw_text_transform(frame, view_projection, transform, params, text);
   }
 
   fn draw_text_transform(
     &mut self,
-    shader: &Shader,
     frame: &mut Frame,
-    camera_uniforms: &CameraUniforms,
+    view_projection: &ViewProjection,
     transform: Matrix4<f32>,
     params: &TextParams,
     text: &str,
@@ -75,14 +78,14 @@ impl TextRenderer {
     }
 
     if self.vertex_array.len() + text.len() * 4 >= MAX_VERTICES {
-      self.next_batch(shader, frame, camera_uniforms);
+      self.next_batch(frame, view_projection);
     }
 
     let mut x = 0.0;
     let mut y = 0.0;
 
-    let width = params.font.cell_size.x as f32;
-    let height = params.font.cell_size.y as f32;
+    let width = self.font.cell_size.x as f32;
+    let height = self.font.cell_size.y as f32;
 
     let advance = width * params.scale.x;
 
@@ -93,7 +96,7 @@ impl TextRenderer {
 
       if c == '\n' {
         x = 0.0;
-        y -= params.font.cell_size.y as f32;
+        y -= self.font.cell_size.y as f32;
         continue;
       }
 
@@ -102,41 +105,34 @@ impl TextRenderer {
         continue;
       }
 
-      let glyph = params.font.get_info(c);
+      let glyph = self.font.get_info(c);
 
-      let (al, ab, ar, at) = glyph.quad_atlas_bounds();
-      let mut tex_coord_min = vec2!(al, ab);
-      let mut tex_coord_max = vec2!(ar, at);
+      let tex_coords = glyph.quad_atlas_bounds();
 
-      let (pl, pb, pr, pt) = glyph.quad_plane_bounds(width, height);
-      let mut quad_min = vec2!(pl, pb);
-      let mut quad_max = vec2!(pr, pt);
+      let mut quad = glyph.quad_plane_bounds(width, height);
 
-      quad_min = quad_min.component_mul(&params.scale);
-      quad_max = quad_max.component_mul(&params.scale);
+      quad.left *= params.scale.x;
+      quad.right *= params.scale.x;
+      quad.top *= params.scale.y;
+      quad.bottom *= params.scale.y;
 
-      quad_min += vec2!(x, y);
-      quad_max += vec2!(x, y);
-
-      let texel_width = 1.0 / params.font.atlas_size.x as f32;
-      let texel_height = 1.0 / params.font.atlas_size.y as f32;
-      let texel = vec2!(texel_width, texel_height);
-
-      tex_coord_min = tex_coord_min.component_mul(&texel);
-      tex_coord_max = tex_coord_max.component_mul(&texel);
+      quad.left += x;
+      quad.right += x;
+      quad.top += y;
+      quad.bottom += y;
 
       let positions = [
-        transform * vec4!(quad_min.x, quad_min.y, 0.0, 1.0),
-        transform * vec4!(quad_min.x, quad_max.y, 0.0, 1.0),
-        transform * vec4!(quad_max.x, quad_max.y, 0.0, 1.0),
-        transform * vec4!(quad_max.x, quad_min.y, 0.0, 1.0),
+        transform * vec4!(quad.left, quad.top, 0.0, 1.0),
+        transform * vec4!(quad.left, quad.bottom, 0.0, 1.0),
+        transform * vec4!(quad.right, quad.bottom, 0.0, 1.0),
+        transform * vec4!(quad.right, quad.top, 0.0, 1.0),
       ];
 
       let tex_coords = [
-        tex_coord_min,
-        vec2!(tex_coord_min.x, tex_coord_max.y),
-        tex_coord_max,
-        vec2!(tex_coord_max.x, tex_coord_min.y),
+        vec2!(tex_coords.left, tex_coords.top),
+        vec2!(tex_coords.left, tex_coords.bottom),
+        vec2!(tex_coords.right, tex_coords.bottom),
+        vec2!(tex_coords.right, tex_coords.top),
       ];
 
       for i in 0..4 {
@@ -155,20 +151,25 @@ impl TextRenderer {
     self.clear();
   }
 
-  pub fn next_batch(&mut self, shader: &Shader, frame: &mut Frame, camera_uniforms: &CameraUniforms) {
-    self.flush(shader, frame, camera_uniforms);
+  pub fn next_batch(&mut self, frame: &mut Frame, view_projection: &ViewProjection) {
+    self.flush(frame, view_projection);
     self.start_batch();
   }
 
-  pub fn flush(&mut self, shader: &Shader, frame: &mut Frame, camera_uniforms: &CameraUniforms) {
+  pub fn flush(&mut self, frame: &mut Frame, view_projection: &ViewProjection) {
     if !self.vertex_array.is_empty() {
+      let uniforms = uniform! {
+        u_font_atlas: self.font.texture.sampled().magnify_filter(MagnifySamplerFilter::Nearest),
+        u_view_projection: *view_projection.as_ref(),
+      };
+
       copy_and_draw(
         &mut self.vertex_buffer,
         &mut self.vertex_array,
         &self.index_buffer,
-        shader,
+        &self.shader,
         frame,
-        camera_uniforms,
+        &uniforms,
       );
     }
   }
@@ -181,16 +182,14 @@ impl TextRenderer {
 }
 
 pub struct TextParams {
-  font: Rc<FontBitmap>,
   line_spacing: f32,
   scale: Size,
   color: Color,
 }
 
 impl TextParams {
-  pub fn new(font: Rc<FontBitmap>) -> Self {
+  pub fn new() -> Self {
     Self {
-      font,
       line_spacing: 1.0,
       scale: vec2!(1.0, 1.0),
       color: Color::WHITE,
@@ -215,5 +214,11 @@ impl TextParams {
   pub fn color(mut self, color: Color) -> Self {
     self.color = color;
     self
+  }
+}
+
+impl Default for TextParams {
+  fn default() -> Self {
+    Self::new()
   }
 }

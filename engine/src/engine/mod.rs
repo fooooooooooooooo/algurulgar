@@ -12,7 +12,6 @@ use crate::engine::fps::FpsStats;
 use crate::engine::input::{set_key_state, update_input_state};
 use crate::engine::layer::Layer;
 use crate::render::renderer::Renderer;
-use crate::render::text::batch::TextRenderer;
 use crate::render::text::font::FontBitmap;
 use crate::window::set_viewport;
 
@@ -28,25 +27,20 @@ pub struct EngineContext {
   pub last_time: Instant,
 
   pub renderer: Renderer,
-  pub text_renderer: TextRenderer,
 
   pub fps_stats: FpsStats,
-  pub font: Rc<FontBitmap>,
 }
 
 impl EngineContext {
-  pub fn new(renderer: Renderer, text_renderer: TextRenderer, font: Rc<FontBitmap>) -> Self {
+  pub fn new(renderer: Renderer) -> Self {
     Self {
       delta_time: 0.0,
       last_time: Instant::now(),
       start_time: Instant::now(),
 
       renderer,
-      text_renderer,
 
       fps_stats: FpsStats::new(),
-
-      font,
     }
   }
 }
@@ -189,13 +183,10 @@ fn create_context(display: &Display<WindowSurface>) -> EngineContext {
   let font = FontBitmap::from_bytes(display, include_bytes!("../../fonts/terminus/ter-u32n.bdf"));
   let font = Rc::new(font);
 
-  let text_renderer = TextRenderer::new(font.clone(), display);
+  let quad_shader = shader!(display, "../../shaders/vert.glsl", "../../shaders/frag.glsl");
+  let text_shader = shader!(display, "../../shaders/text_vert.glsl", "../../shaders/text_frag.glsl");
 
-  let shader = shader!(display, "../../shaders/vert.glsl", "../../shaders/frag.glsl");
+  let renderer = Renderer::new(display, quad_shader, text_shader, font);
 
-  let mut renderer = Renderer::new(display);
-
-  renderer.add_shader(shader);
-
-  EngineContext::new(renderer, text_renderer, font)
+  EngineContext::new(renderer)
 }

@@ -41,21 +41,37 @@ pub struct CharInfo {
   pub texture_coords: [[f32; 2]; 2],
 }
 
-impl CharInfo {
-  pub fn quad_atlas_bounds(&self) -> (f32, f32, f32, f32) {
-    let [x0, y0] = self.texture_coords[0];
-    let [x1, y1] = self.texture_coords[1];
+pub struct Bounds {
+  pub left: f32,
+  pub right: f32,
+  pub top: f32,
+  pub bottom: f32,
+}
 
-    (x0, y0, x1, y1)
+impl CharInfo {
+  pub fn quad_atlas_bounds(&self) -> Bounds {
+    let [left, top] = self.texture_coords[0];
+    let [right, bottom] = self.texture_coords[1];
+
+    Bounds {
+      left,
+      right,
+      top,
+      bottom,
+    }
   }
 
-  pub fn quad_plane_bounds(&self, width: f32, height: f32) -> (f32, f32, f32, f32) {
-    let x0 = self.atlas_position.x as f32;
-    let y0 = self.atlas_position.y as f32;
-    let x1 = x0 + width;
-    let y1 = y0 + height;
-
-    (x0, y0, x1, y1)
+  /// Outputs the bounding box of the glyph as it should be placed on the
+  /// baseline
+  /// bitmap font so the top left corner is at (0, 0)
+  /// and the bottom right corner is at (width, height)
+  pub fn quad_plane_bounds(&self, width: f32, height: f32) -> Bounds {
+    Bounds {
+      left: 0.0,
+      right: width,
+      top: 0.0,
+      bottom: height,
+    }
   }
 }
 

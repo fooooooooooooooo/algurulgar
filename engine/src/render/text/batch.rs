@@ -139,16 +139,21 @@ impl TextRenderer {
     // fails because self.vertices[..self.cursor]
     // is not the same size as vertex buffer
     // self.vertex_buffer.write(&self.vertices[..self.cursor]);
+
     if self.cursor == 0 {
       return;
     }
 
-    self.vertex_buffer.invalidate();
-    self
-      .vertex_buffer
-      .slice_mut(0..self.cursor)
-      .unwrap()
-      .write(&self.vertices[..self.cursor]);
+    if self.cursor == self.vertex_buffer.len() {
+      self.vertex_buffer.write(&self.vertices[..self.cursor]);
+    } else {
+      self.vertex_buffer.invalidate();
+      self
+        .vertex_buffer
+        .slice_mut(0..self.cursor)
+        .unwrap()
+        .write(&self.vertices[..self.cursor]);
+    }
 
     self.cursor = 0;
 

@@ -1,13 +1,17 @@
-#version 140
+#version 450 core
 
-in vec2 f_tex_coords;
-in vec4 f_color;
+layout (location = 0) out vec4 o_color;
 
-uniform sampler2D u_texture;
+struct VertexOutput {
+	vec4 color;
+	vec2 tex_coords;
+};
 
-out vec4 color;
+layout (location = 0) in VertexOutput Input;
+
+layout (binding = 0) uniform sampler2D u_font_atlas;
 
 void main() {
-  float c = texture(u_texture, f_tex_coords).r;
-  color = vec4(1, 1, 1, c) * f_color;
+	vec4 texcolor = Input.color * texture(u_font_atlas, Input.tex_coords);
+  o_color = vec4(texcolor.rgb, texcolor.a);
 }

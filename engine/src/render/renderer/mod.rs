@@ -1,15 +1,19 @@
 pub mod quad;
 pub mod text;
 
-use glium::uniforms::{EmptyUniforms, UniformsStorage};
-use glium::{uniform, Display, Frame, IndexBuffer, Surface, VertexBuffer};
+use std::ops::Deref;
+use std::rc::Rc;
+
+use glium::uniforms::Uniforms;
+use glium::{Display, Frame, IndexBuffer, Surface, VertexBuffer};
 use glutin::surface::WindowSurface;
 
 use self::quad::QuadRenderer;
 use self::text::{TextParams, TextRenderer};
 use super::camera::ortho::OrthoCameraController;
 use super::shader::{Shader, DRAW_PARAMETERS};
-use crate::math::{Position, Size};
+use super::text::font::FontBitmap;
+use crate::math::{Position, Size, ViewProjection};
 
 pub const MAX_QUADS: usize = 20000;
 pub const MAX_VERTICES: usize = MAX_QUADS * 4;
@@ -38,34 +42,23 @@ static QUAD_INDEX_ARRAY: [u16; MAX_INDICES] = {
 };
 
 pub struct Renderer {
-  pub shaders: Vec<Shader>,
-
   quad_renderer: QuadRenderer,
   text_renderer: TextRenderer,
 }
 
 impl Renderer {
-  pub fn new(display: &Display<WindowSurface>) -> Self {
-    let quad_renderer = QuadRenderer::new(display);
-    let text_renderer = TextRenderer::new(display);
+  pub fn new(display: &Display<WindowSurface>, quad_shader: Shader, text_shader: Shader, font: Rc<FontBitmap>) -> Self {
+    let quad_renderer = QuadRenderer::new(display, quad_shader);
+    let text_renderer = TextRenderer::new(display, text_shader, font);
 
     Self {
-      shaders: vec![],
-
       quad_renderer,
       text_renderer,
     }
   }
 
-  pub fn add_shader(&mut self, shader: Shader) {
-    self.shaders.push(shader);
-  }
-
   pub fn begin<'a>(&'a mut self, camera: &OrthoCameraController, frame: &'a mut Frame) -> RendererContext<'a> {
-    let view_projection = camera.camera().view_projection();
-    let camera_uniforms = uniform! {
-      u_view_projection: *view_projection.as_ref(),
-    };
+    let view_projection = *camera.camera().view_projection();
 
     self.quad_renderer.clear();
     self.text_renderer.clear();
@@ -73,7 +66,7 @@ impl Renderer {
     RendererContext {
       renderer: self,
       frame,
-      camera_uniforms,
+      view_projection,
     }
   }
 }
@@ -81,35 +74,35 @@ impl Renderer {
 pub struct RendererContext<'a> {
   pub renderer: &'a mut Renderer,
   pub frame: &'a mut Frame,
-  pub camera_uniforms: CameraUniforms<'a>,
+  pub view_projection: ViewProjection,
 }
 
 impl<'a> RendererContext<'a> {
+  #[inline]
   pub fn draw_quad(&mut self, position: Position, size: Size) {
-    let shader = &self.renderer.shaders[0];
-
     self
       .renderer
       .quad_renderer
-      .draw_quad(shader, self.frame, &self.camera_uniforms, position, size);
+      .draw_quad(self.frame, &self.view_projection, position, size);
   }
 
+  #[inline]
   pub fn draw_text(&mut self, text: &str, position: Position, params: &TextParams) {
-    let shader = &self.renderer.shaders[0];
-
     self
       .renderer
       .text_renderer
-      .draw_text(shader, self.frame, &self.camera_uniforms, position, params, text);
+      .draw_text(self.frame, &self.view_projection, position, params, text);
   }
 
   fn flush(&mut self) {
-    let shader = &self.renderer.shaders[0];
-
     self
       .renderer
       .quad_renderer
-      .flush(shader, self.frame, &self.camera_uniforms)
+      .next_batch(self.frame, &self.view_projection);
+    self
+      .renderer
+      .text_renderer
+      .next_batch(self.frame, &self.view_projection);
   }
 
   pub fn finish(mut self) {
@@ -117,36 +110,33 @@ impl<'a> RendererContext<'a> {
   }
 }
 
-type CameraUniforms<'a> = UniformsStorage<'a, [[f32; 4]; 4], EmptyUniforms>;
-
-pub(crate) fn copy_and_draw<V: Copy>(
+pub(crate) fn copy_and_draw<V: Copy, U: Uniforms>(
   vertex_buffer: &mut VertexBuffer<V>,
   vertex_array: &mut Vec<V>,
   index_buffer: &IndexBuffer<u16>,
   shader: &Shader,
   frame: &mut Frame,
-  camera_uniforms: &CameraUniforms,
+  uniforms: &U,
 ) {
-  vertex_buffer.invalidate();
+  if vertex_array.len() == vertex_buffer.len() {
+    vertex_buffer.write(vertex_array.as_slice());
+  } else {
+    vertex_buffer.invalidate();
 
-  unsafe {
-    vertex_buffer
-      .slice_mut(0..vertex_array.len())
-      .unwrap_unchecked()
-      .write(vertex_array.as_slice());
+    unsafe {
+      vertex_buffer
+        .slice_mut(0..vertex_array.len())
+        .unwrap_unchecked()
+        .write(vertex_array.as_slice());
+    }
   }
-
-  vertex_buffer
-    .slice_mut(0..vertex_array.len())
-    .unwrap()
-    .write(vertex_array.as_slice());
 
   frame
     .draw(
-      &*vertex_buffer,
+      vertex_buffer.deref(),
       index_buffer,
       shader.program(),
-      camera_uniforms,
+      uniforms,
       &DRAW_PARAMETERS,
     )
     .unwrap();

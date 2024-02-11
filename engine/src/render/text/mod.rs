@@ -1,6 +1,6 @@
 use glium::implement_vertex;
 
-pub mod batch;
+// pub mod batch;
 pub mod font;
 
 #[derive(Default, Copy, Clone)]

@@ -1,17 +1,21 @@
-#version 140
+#version 450 core
 
-in vec2 position;
-in vec2 tex_coords;
-in vec4 color;
+layout (location = 0) in vec2 position;
+layout (location = 1) in vec4 color;
+layout (location = 2) in vec2 tex_coords;
 
 uniform mat4 u_view_projection;
 
-out vec2 f_tex_coords;
-out vec4 f_color;
+struct VertexOutput {
+	vec4 color;
+	vec2 tex_coords;
+};
+
+layout (location = 0) out VertexOutput Output;
 
 void main() {
-  gl_Position = u_view_projection * vec4(position, 1.0, 1.0);
+	Output.color = color;
+	Output.tex_coords = tex_coords;
 
-  f_tex_coords = tex_coords;
-  f_color = color;
+	gl_Position = u_view_projection * vec4(position, 0.0, 1.0);
 }
