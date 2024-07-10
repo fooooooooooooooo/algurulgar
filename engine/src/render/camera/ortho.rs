@@ -1,5 +1,6 @@
 use nalgebra::Matrix4;
-use winit::event::{MouseScrollDelta, VirtualKeyCode as VK, WindowEvent};
+use winit::event::{MouseScrollDelta, WindowEvent};
+use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::Window;
 
 use crate::engine::events::EventHandler;
@@ -51,7 +52,7 @@ impl OrthoCamera {
   }
 
   pub fn recalculate_view_matrix(&mut self) {
-    let transform = Matrix4::identity().prepend_translation(&vec3!(self.position.x, self.position.y, 0.0));
+    let transform = Matrix4::identity().prepend_translation(&vec3(self.position.x, self.position.y, 0.0));
 
     self.view = transform.try_inverse().unwrap_or_else(Matrix4::zeros);
     self.view_projection = self.projection * self.view;
@@ -118,26 +119,26 @@ impl Default for OrthoCameraController {
 
 impl UpdateHandler for OrthoCameraController {
   fn update(&mut self, delta_time: f32) {
-    if key_pressed(VK::A) {
+    if key_pressed(PhysicalKey::Code(KeyCode::KeyA)) {
       self.camera.position.x -= self.speed * delta_time;
       self.camera.recalculate_view_matrix();
-    } else if key_pressed(VK::D) {
+    } else if key_pressed(PhysicalKey::Code(KeyCode::KeyD)) {
       self.camera.position.x += self.speed * delta_time;
       self.camera.recalculate_view_matrix();
     }
 
-    if key_pressed(VK::W) {
+    if key_pressed(PhysicalKey::Code(KeyCode::KeyW)) {
       self.camera.position.y += self.speed * delta_time;
       self.camera.recalculate_view_matrix();
-    } else if key_pressed(VK::S) {
+    } else if key_pressed(PhysicalKey::Code(KeyCode::KeyS)) {
       self.camera.position.y -= self.speed * delta_time;
       self.camera.recalculate_view_matrix();
     }
 
-    if key_pressed(VK::Q) {
+    if key_pressed(PhysicalKey::Code(KeyCode::KeyQ)) {
       self.set_zoom(self.zoom + self.speed * delta_time);
       self.update_projection();
-    } else if key_pressed(VK::E) {
+    } else if key_pressed(PhysicalKey::Code(KeyCode::KeyE)) {
       self.set_zoom(self.zoom - self.speed * delta_time);
       self.update_projection();
     }

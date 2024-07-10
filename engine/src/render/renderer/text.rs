@@ -56,8 +56,8 @@ impl TextRenderer {
     params: &TextParams,
     text: &str,
   ) {
-    let position = vec3!(position.x, position.y, 0.0);
-    let size = vec3!(params.scale.x, params.scale.y, 1.0);
+    let position = vec3(position.x, position.y, 0.0);
+    let size = vec3(params.scale.x, params.scale.y, 1.0);
     let translation = Matrix4::identity().prepend_translation(&position);
     let scaling = Matrix4::identity().prepend_nonuniform_scaling(&size);
     let transform = translation * scaling;
@@ -96,7 +96,7 @@ impl TextRenderer {
 
       if c == '\n' {
         x = 0.0;
-        y -= self.font.cell_size.y as f32;
+        y -= self.font.cell_size.y as f32 * params.scale.y * params.line_spacing;
         continue;
       }
 
@@ -122,17 +122,17 @@ impl TextRenderer {
       quad.bottom += y;
 
       let positions = [
-        transform * vec4!(quad.left, quad.top, 0.0, 1.0),
-        transform * vec4!(quad.left, quad.bottom, 0.0, 1.0),
-        transform * vec4!(quad.right, quad.bottom, 0.0, 1.0),
-        transform * vec4!(quad.right, quad.top, 0.0, 1.0),
+        transform * vec4(quad.left, quad.top, 0.0, 1.0),
+        transform * vec4(quad.left, quad.bottom, 0.0, 1.0),
+        transform * vec4(quad.right, quad.bottom, 0.0, 1.0),
+        transform * vec4(quad.right, quad.top, 0.0, 1.0),
       ];
 
       let tex_coords = [
-        vec2!(tex_coords.left, tex_coords.top),
-        vec2!(tex_coords.left, tex_coords.bottom),
-        vec2!(tex_coords.right, tex_coords.bottom),
-        vec2!(tex_coords.right, tex_coords.top),
+        vec2(tex_coords.left, tex_coords.top),
+        vec2(tex_coords.left, tex_coords.bottom),
+        vec2(tex_coords.right, tex_coords.bottom),
+        vec2(tex_coords.right, tex_coords.top),
       ];
 
       for i in 0..4 {
@@ -191,7 +191,7 @@ impl TextParams {
   pub fn new() -> Self {
     Self {
       line_spacing: 1.0,
-      scale: vec2!(1.0, 1.0),
+      scale: vec2(1.0, 1.0),
       color: Color::WHITE,
     }
   }
@@ -202,7 +202,7 @@ impl TextParams {
   }
 
   pub fn scale(mut self, scale: f32) -> Self {
-    self.scale = vec2!(scale, scale);
+    self.scale = vec2(scale, scale);
     self
   }
 

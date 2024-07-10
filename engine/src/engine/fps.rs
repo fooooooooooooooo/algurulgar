@@ -44,7 +44,7 @@ impl FpsStats {
       self.update_average();
 
       self.text = format!(
-        "FPS: {:>4} AVG: {:>4} MAX: {:>4} MIN: {:>4}\n{:?}",
+        "FPS: {:>4} AVG: {:>4} MAX: {:>4} MIN: {:>4}\t{:?}",
         self.current,
         self.average,
         self.max,

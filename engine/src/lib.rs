@@ -9,7 +9,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 pub use engine::layer::Layer;
 pub use engine::{Engine, EngineContext};
 pub use log::{debug, error, info, trace, warn};
-pub use math::Color;
+pub use math::*;
 use pretty_env_logger::init;
 pub use render::camera::ortho::{OrthoCamera, OrthoCameraController};
 pub use {glium, glutin, nalgebra, winit};

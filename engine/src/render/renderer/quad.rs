@@ -59,10 +59,10 @@ impl QuadRenderer {
     const QUAD_VERTEX_COUNT: usize = 4;
     const TEX_COORDS: [[f32; 2]; 4] = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]];
     const QUAD_VERTEX_POSITIONS: [Vector4<f32>; 4] = [
-      vec4!(-0.5, -0.5, 0.0, 1.0),
-      vec4!(0.5, -0.5, 0.0, 1.0),
-      vec4!(0.5, 0.5, 0.0, 1.0),
-      vec4!(-0.5, 0.5, 0.0, 1.0),
+      vec4(-0.5, -0.5, 0.0, 1.0),
+      vec4(0.5, -0.5, 0.0, 1.0),
+      vec4(0.5, 0.5, 0.0, 1.0),
+      vec4(-0.5, 0.5, 0.0, 1.0),
     ];
 
     if self.vertex_array.len() + QUAD_VERTEX_COUNT >= MAX_VERTICES {

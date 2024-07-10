@@ -10,9 +10,10 @@ bdf = { git = "https://github.com/fooooooooooooooo/rust-bdf", version = "0.7.0" 
 glium.workspace = true
 glutin.workspace = true
 glutin-winit.workspace = true
-log = "0.4.20"
+log.workspace = true
 nalgebra.workspace = true
 pretty_env_logger = "0.5.0"
 rand.workspace = true
 raw-window-handle.workspace = true
 winit.workspace = true
+thiserror.workspace = true

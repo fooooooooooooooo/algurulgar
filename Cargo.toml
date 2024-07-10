@@ -3,13 +3,19 @@ resolver = "2"
 members = ["engine", "sandbox"]
 
 [workspace.dependencies]
-anyhow = "1.0.77"
-atomic_float = "0.1.0"
-glium = "0.33.0"
-glutin = "0.30.4"
-glutin-winit = "0.3"
-nalgebra = "0.32.3"
+anyhow = "1"
+atomic_float = "1.0.0"
+glutin = "0.32.0"
+glutin-winit = "0.5.0"
+nalgebra = "0.33.0"
 rand = "0.8.5"
-raw-window-handle = "0.5"
-winit = "0.28"
+raw-window-handle = "0.6.2"
+winit = "0.30.3"
 algurulgar = { path = "engine" }
+log = "0.4"
+thiserror = "1"
+
+[workspace.dependencies.glium]
+git = "https://github.com/est31/glium.git"
+branch = "glutin-0.32"
+version = "0.34.0"

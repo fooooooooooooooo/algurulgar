@@ -7,9 +7,9 @@ use glutin::display::GetGlDisplay;
 use glutin::prelude::*;
 use glutin::surface::{SurfaceAttributesBuilder, SwapInterval, WindowSurface};
 use glutin_winit::DisplayBuilder;
-use raw_window_handle::HasRawWindowHandle;
-use winit::event_loop::{EventLoop, EventLoopWindowTarget};
-use winit::window::{Window, WindowBuilder};
+use raw_window_handle::HasWindowHandle;
+use winit::event_loop::ActiveEventLoop;
+use winit::window::{Window, WindowAttributes};
 
 use crate::window::set_viewport;
 use crate::VSYNC;
@@ -20,10 +20,12 @@ pub struct AppState {
 }
 
 impl AppState {
-  pub fn new(event_loop: &EventLoopWindowTarget<()>, window_title: &'static str, visible: bool) -> AppState {
-    let window_builder = WindowBuilder::new().with_title(window_title).with_visible(visible);
+  pub fn new(event_loop: &ActiveEventLoop, window_title: &'static str, visible: bool) -> AppState {
+    let window_attributes = WindowAttributes::default()
+      .with_title(window_title)
+      .with_visible(visible);
     let config_template_builder = ConfigTemplateBuilder::new().with_multisampling(4);
-    let display_builder = DisplayBuilder::new().with_window_builder(Some(window_builder));
+    let display_builder = DisplayBuilder::new().with_window_attributes(Some(window_attributes));
 
     let (window, gl_config) = display_builder
       .build(event_loop, config_template_builder, |mut configs| {
@@ -32,7 +34,7 @@ impl AppState {
       .unwrap();
     let window = window.unwrap();
 
-    let raw_window_handle = window.raw_window_handle();
+    let raw_window_handle = window.window_handle().unwrap().as_raw();
     let context_attributes = ContextAttributesBuilder::new()
       .with_context_api(ContextApi::OpenGl(Some(Version::new(4, 0))))
       .build(Some(raw_window_handle));
@@ -80,6 +82,5 @@ impl AppState {
 
 pub struct App {
   pub window_title: &'static str,
-  pub event_loop: EventLoop<()>,
   pub state: Option<AppState>,
 }

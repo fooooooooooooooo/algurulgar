@@ -3,14 +3,17 @@ use std::time::Instant;
 
 use glium::{Display, Surface};
 use glutin::surface::WindowSurface;
-use winit::event::{Event, WindowEvent};
-use winit::event_loop::EventLoopBuilder;
-use winit::window::Window;
+use winit::application::ApplicationHandler;
+use winit::error::EventLoopError;
+use winit::event::WindowEvent;
+use winit::event_loop::{ActiveEventLoop, EventLoop};
+use winit::window::{Window, WindowId};
 
 use crate::app::{App, AppState};
 use crate::engine::fps::FpsStats;
 use crate::engine::input::{set_key_state, update_input_state};
 use crate::engine::layer::Layer;
+use crate::math::vec2;
 use crate::render::renderer::Renderer;
 use crate::render::text::font::FontBitmap;
 use crate::window::set_viewport;
@@ -45,80 +48,44 @@ impl EngineContext {
   }
 }
 
-pub struct Engine {
-  pub app: App,
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+  #[error(transparent)]
+  EventLoopError(EventLoopError),
+}
 
+impl From<EventLoopError> for Error {
+  fn from(e: EventLoopError) -> Self {
+    Self::EventLoopError(e)
+  }
+}
+
+pub struct Engine {
   pub layers: Vec<Box<dyn Layer>>,
   pub context: Option<EngineContext>,
+  pub app: App,
 }
 
 impl Engine {
-  pub fn new(window_title: &'static str, layers: Vec<Box<dyn Layer>>) -> Self {
-    let event_loop = EventLoopBuilder::new().build();
+  pub fn new(window_title: &'static str, layers: Vec<Box<dyn Layer>>) -> (Self, EventLoop<()>) {
+    let event_loop = EventLoop::builder().build().unwrap();
 
     let app = App {
       window_title,
-      event_loop,
       state: None,
     };
 
     let context = None;
 
-    Self { app, layers, context }
+    (Self { layers, context, app }, event_loop)
   }
 
-  pub fn run(self) -> ! {
-    let Self {
-      mut app,
-      mut layers,
-      mut context,
-    } = self;
-
+  pub fn run(mut self, event_loop: EventLoop<()>) -> Result<(), Error> {
     info!("starting event loop");
 
-    app.event_loop.run(move |event, window_target, control_flow| {
-      match event {
-        Event::Resumed => {
-          let state = AppState::new(window_target, app.window_title, true);
-          context = Some(create_context(&state.display));
-          app.state = Some(state);
-        }
-        Event::Suspended => app.state = None,
-        Event::RedrawRequested(_) => {
-          if let Some(state) = &mut app.state {
-            let context = context.as_mut().unwrap();
-            Self::update(context, &mut layers);
-            Self::draw(context, &mut layers, &state.display);
-          }
-        }
-        // By requesting a redraw in response to a RedrawEventsCleared event we get continuous rendering.
-        // For applications that only change due to user input you could remove this handler.
-        Event::RedrawEventsCleared => {
-          if let Some(state) = &app.state {
-            state.window.request_redraw();
-          }
-        }
-        Event::WindowEvent { event, .. } => match event {
-          WindowEvent::Resized(new_size) => {
-            if let Some(state) = &mut app.state {
-              state.display.resize(new_size.into());
+    event_loop.run_app(&mut self)?;
 
-              set_viewport(new_size.into());
-
-              Self::handle_window_event(context.as_mut().unwrap(), &mut layers, &event, &state.window);
-            }
-          }
-          WindowEvent::CloseRequested => control_flow.set_exit(),
-          // Every other event
-          event => {
-            if let Some(state) = &mut app.state {
-              Self::handle_window_event(context.as_mut().unwrap(), &mut layers, &event, &state.window);
-            }
-          }
-        },
-        _ => (),
-      };
-    });
+    Ok(())
   }
 
   fn update(context: &mut EngineContext, layers: &mut [Box<dyn Layer>]) {
@@ -160,21 +127,66 @@ impl Engine {
         let x = x / width * 2.0 - 1.0;
         let y = y / height * 2.0 - 1.0;
 
-        input::set_mouse_position(vec2!(x, y));
+        input::set_mouse_position(vec2(x, y));
       }
       WindowEvent::MouseInput { state, button, .. } => {
         input::set_mouse_state(*button, *state);
       }
-      WindowEvent::KeyboardInput { input, .. } => {
-        if let Some(key) = input.virtual_keycode {
-          set_key_state(key, input.state);
-        }
+      WindowEvent::KeyboardInput { event, .. } => {
+        set_key_state(event.physical_key.into(), event.state);
       }
       _ => (),
     }
 
     for layer in layers {
       layer.handle_window_event(context, event, window);
+    }
+  }
+}
+
+impl ApplicationHandler for Engine {
+  fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+    let state = AppState::new(event_loop, self.app.window_title, true);
+    self.context = Some(create_context(&state.display));
+    self.app.state = Some(state);
+  }
+
+  fn suspended(&mut self, _: &ActiveEventLoop) {
+    self.app.state = None
+  }
+
+  // Request redraw
+  fn about_to_wait(&mut self, _: &ActiveEventLoop) {
+    if let Some(state) = &self.app.state {
+      state.window.request_redraw();
+    }
+  }
+
+  fn window_event(&mut self, event_loop: &ActiveEventLoop, _: WindowId, event: WindowEvent) {
+    match event {
+      WindowEvent::RedrawRequested => {
+        if let Some(state) = &mut self.app.state {
+          let context = self.context.as_mut().unwrap();
+          Self::update(context, &mut self.layers);
+          Self::draw(context, &mut self.layers, &state.display);
+        }
+      }
+      WindowEvent::Resized(new_size) => {
+        if let Some(state) = &mut self.app.state {
+          state.display.resize(new_size.into());
+
+          set_viewport(new_size.into());
+
+          Self::handle_window_event(self.context.as_mut().unwrap(), &mut self.layers, &event, &state.window);
+        }
+      }
+      WindowEvent::CloseRequested => event_loop.exit(),
+      // send every other event to engine / layers
+      event => {
+        if let Some(state) = &mut self.app.state {
+          Self::handle_window_event(self.context.as_mut().unwrap(), &mut self.layers, &event, &state.window);
+        }
+      }
     }
   }
 }
