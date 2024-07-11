@@ -39,18 +39,18 @@ impl SandboxLayer {
 
 impl Layer for SandboxLayer {
   fn update(&mut self, context: &mut EngineContext) {
-    let time = context.start_time.elapsed().as_secs_f32();
-    let (x, y) = (time * 2.0).sin_cos();
-    self.pos.x = 2.0 * x;
-    self.pos.y = 2.0 * y;
+    // let time = context.start_time.elapsed().as_secs_f32();
+
+    let mouse_position = mouse_position();
+    self.pos = self.camera.camera().screen_to_world(mouse_position);
 
     self.camera.update(context.delta_time);
 
     if key_pressed(KeyCode::KeyX) {
-      self.scale += 0.1;
+      self.scale += 0.0001;
       println!("scale: {}", self.scale);
     } else if key_pressed(KeyCode::KeyZ) {
-      self.scale -= 0.1;
+      self.scale -= 0.0001;
       println!("scale: {}", self.scale);
     }
   }

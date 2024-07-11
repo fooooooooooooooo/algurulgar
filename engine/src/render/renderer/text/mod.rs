@@ -8,10 +8,12 @@ use glutin::surface::WindowSurface;
 use nalgebra::Matrix4;
 
 use crate::math::{Position, Size, ViewProjection};
+use crate::render::renderer::text::font::FontBitmap;
 use crate::render::renderer::{copy_and_draw, MAX_VERTICES, QUAD_INDEX_ARRAY};
 use crate::render::shader::Shader;
-use crate::render::text::font::FontBitmap;
 use crate::{vec2, vec3, vec4, Color};
+
+pub mod font;
 
 const TAB_SIZE: f32 = 4.0;
 

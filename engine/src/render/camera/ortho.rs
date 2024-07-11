@@ -7,8 +7,8 @@ use crate::engine::events::EventHandler;
 use crate::engine::input::key_pressed;
 use crate::math::{Position, Projection, View, ViewProjection};
 use crate::update::UpdateHandler;
-use crate::vec3;
 use crate::window::aspect_ratio;
+use crate::{vec2, vec3, vec4};
 
 pub struct OrthoCamera {
   projection: Projection,
@@ -56,6 +56,24 @@ impl OrthoCamera {
 
     self.view = transform.try_inverse().unwrap_or_else(Matrix4::zeros);
     self.view_projection = self.projection * self.view;
+  }
+
+  pub fn screen_to_world(&self, screen_position: Position) -> Position {
+    let inverse_view_projection = self.view_projection.try_inverse().unwrap_or_else(Matrix4::zeros);
+
+    // screen_position is in the range [-1, 1] already
+    let ndc_x = screen_position.x;
+    let ndc_y = 1.0 - screen_position.y - 1.0;
+
+    // convert ndc to homogeneous clip space
+    // z is 0 to get a point on the near plane
+    let clip = vec4(ndc_x, ndc_y, 0.0, 1.0);
+
+    // convert clip space to world space
+    let world = inverse_view_projection * clip;
+
+    // normalize by world.w to get the actual position
+    vec2(world.x / world.w, world.y / world.w)
   }
 }
 

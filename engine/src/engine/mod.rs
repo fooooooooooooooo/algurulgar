@@ -15,7 +15,7 @@ use crate::engine::input::{set_key_state, update_input_state};
 use crate::engine::layer::Layer;
 use crate::math::vec2;
 use crate::render::renderer::Renderer;
-use crate::render::text::font::FontBitmap;
+use crate::render::renderer::text::font::FontBitmap;
 use crate::window::set_viewport;
 
 pub mod component;

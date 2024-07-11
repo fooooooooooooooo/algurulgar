@@ -12,7 +12,7 @@ use self::quad::QuadRenderer;
 use self::text::{TextParams, TextRenderer};
 use super::camera::ortho::OrthoCameraController;
 use super::shader::{Shader, DRAW_PARAMETERS};
-use super::text::font::FontBitmap;
+use crate::render::renderer::text::font::FontBitmap;
 use crate::math::{Position, Size, ViewProjection};
 
 pub const MAX_QUADS: usize = 20000;
