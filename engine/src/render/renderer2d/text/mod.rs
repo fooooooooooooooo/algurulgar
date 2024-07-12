@@ -8,8 +8,8 @@ use glutin::surface::WindowSurface;
 use nalgebra::Matrix4;
 
 use crate::math::{Position, Size, ViewProjection};
-use crate::render::renderer::text::font::FontBitmap;
-use crate::render::renderer::{copy_and_draw, MAX_VERTICES, QUAD_INDEX_ARRAY};
+use crate::render::renderer2d::text::font::FontBitmap;
+use crate::render::renderer2d::{copy_and_draw, MAX_VERTICES, QUAD_INDEX_ARRAY};
 use crate::render::shader::Shader;
 use crate::{vec2, vec3, vec4, Color};
 

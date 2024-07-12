@@ -104,6 +104,11 @@ impl OrthoCameraController {
     &self.camera
   }
 
+  #[inline]
+  pub const fn view_projection(&self) -> &ViewProjection {
+    self.camera.view_projection()
+  }
+
   pub fn set_zoom(&mut self, zoom: f32) {
     self.zoom = zoom.clamp(0.25, 10.0);
     self.update_projection();

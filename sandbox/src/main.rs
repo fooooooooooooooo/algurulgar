@@ -3,7 +3,7 @@ use algurulgar::engine::input::{key_pressed, last_key_pressed, mouse_position};
 use algurulgar::glium::Frame;
 use algurulgar::math::Position;
 use algurulgar::render::camera::ortho::OrthoCameraController;
-use algurulgar::render::renderer::text::TextParams;
+use algurulgar::render::renderer2d::text::TextParams;
 use algurulgar::update::UpdateHandler;
 use algurulgar::winit::event::WindowEvent;
 use algurulgar::winit::keyboard::KeyCode;

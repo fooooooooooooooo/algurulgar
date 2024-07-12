@@ -4,7 +4,7 @@ use glutin::surface::WindowSurface;
 use nalgebra::{Matrix4, Vector2, Vector3, Vector4};
 
 use crate::math::{Position, ViewProjection};
-use crate::render::renderer::{copy_and_draw, MAX_VERTICES, QUAD_INDEX_ARRAY};
+use crate::render::renderer2d::{copy_and_draw, MAX_VERTICES, QUAD_INDEX_ARRAY};
 use crate::render::shader::Shader;
 use crate::vec4;
 
