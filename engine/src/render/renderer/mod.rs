@@ -7,7 +7,6 @@ use mesh::{Mesh, MeshRenderer};
 use nalgebra::Matrix4;
 
 use super::shader::Shader;
-use crate::window::Viewport;
 use crate::{OrthoCameraController, Vec3, ViewProjection};
 
 pub mod mesh;
@@ -21,11 +20,6 @@ impl Renderer {
     Self {
       mesh_renderer: MeshRenderer::new(display, shader),
     }
-  }
-
-  pub fn on_viewport_resize(&mut self, viewport: Viewport) {
-    // todo: update renderers
-    let _ = viewport;
   }
 
   /// Initialize the renderer context to begin drawing
@@ -52,9 +46,10 @@ pub struct RendererContext<'a> {
 
 impl<'a> RendererContext<'a> {
   /// Draw vertex buffer
-  pub fn draw(&mut self, position: Vec3, mesh: &Mesh) {
-    let translation = Matrix4::identity().prepend_translation(&position);
-    let transform = translation;
+  pub fn draw(&mut self, position: &Vec3, mesh: &Mesh) {
+    let mut transform = Matrix4::identity();
+    transform.append_translation_mut(position);
+    transform.transpose_mut();
 
     self
       .renderer

@@ -5,8 +5,8 @@ use glium::uniforms::Uniforms;
 use glium::{implement_vertex, uniform, Display, Frame, IndexBuffer, Surface, VertexBuffer};
 use glutin::surface::WindowSurface;
 use nalgebra::Matrix4;
+use tobj::LoadOptions;
 
-use crate::mesh::obj::Obj;
 use crate::render::shader::{Shader, DRAW_PARAMETERS};
 use crate::ViewProjection;
 
@@ -54,25 +54,32 @@ impl Mesh {
   }
 
   pub fn load_obj(obj: &str) -> Self {
-    let reader = std::io::BufReader::new(obj.as_bytes());
-    let obj = Obj::parse(reader).unwrap();
+    let mut reader = std::io::BufReader::new(obj.as_bytes());
+    let (obj, ..) = tobj::load_obj_buf(&mut reader, &LoadOptions::default(), |_| {
+      Err(tobj::LoadError::OpenFileFailed)
+    })
+    .unwrap();
+
+    let obj = obj.first().unwrap();
 
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
 
     const COLORS: [[f32; 4]; 3] = [[1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]];
 
-    for (i, vertex) in obj.vertices.iter().enumerate() {
+    for (i, [x, y, z]) in obj.mesh.positions.array_chunks::<3>().enumerate() {
       vertices.push(Vertex {
-        position: [vertex.position.x, vertex.position.y, vertex.position.z],
+        position: [*x, *y, *z],
         color: COLORS[i % COLORS.len()],
       });
     }
 
-    for edge in obj.edges {
-      indices.push(edge.0);
-      indices.push(edge.1);
+    for index in &obj.mesh.indices {
+      indices.push(*index as u16);
     }
+
+    println!("vertices: {:?}", vertices);
+    println!("indices: {:?}", indices);
 
     Self { vertices, indices }
   }

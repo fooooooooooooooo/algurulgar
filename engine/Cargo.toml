@@ -17,3 +17,4 @@ rand.workspace = true
 raw-window-handle.workspace = true
 winit.workspace = true
 thiserror.workspace = true
+tobj = "4.0.2"

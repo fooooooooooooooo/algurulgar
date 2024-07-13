@@ -3,7 +3,7 @@ use algurulgar::engine::input::{key_pressed, last_key_pressed, mouse_position};
 use algurulgar::glium::Frame;
 use algurulgar::math::Position;
 use algurulgar::render::camera::ortho::OrthoCameraController;
-use algurulgar::render::renderer::mesh::{Mesh, Vertex};
+use algurulgar::render::renderer::mesh::Mesh;
 use algurulgar::render::renderer2d::text::TextParams;
 use algurulgar::update::UpdateHandler;
 use algurulgar::winit::event::WindowEvent;
@@ -89,7 +89,7 @@ impl Layer for SandboxLayer {
 
     let mut renderer = context.renderer.begin(&self.camera, frame);
 
-    renderer.draw(self.cube_pos, &self.cube);
+    renderer.draw(&self.cube_pos, &self.cube);
 
     renderer.finish();
 

@@ -1,4 +1,5 @@
 #![feature(trait_alias)]
+#![feature(array_chunks)]
 
 #[macro_use]
 extern crate log;
