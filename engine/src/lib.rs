@@ -26,6 +26,8 @@ pub mod engine;
 pub mod update;
 pub mod window;
 
+pub mod mesh;
+
 pub const VSYNC: bool = true;
 
 pub fn init_logger() {

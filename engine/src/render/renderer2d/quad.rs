@@ -1,12 +1,12 @@
 use glium::index::PrimitiveType;
 use glium::{implement_vertex, uniform, Display, Frame, IndexBuffer, VertexBuffer};
 use glutin::surface::WindowSurface;
-use nalgebra::{Matrix4, Vector2, Vector3, Vector4};
+use nalgebra::{Matrix4, Vector3, Vector4};
 
 use crate::math::{Position, ViewProjection};
 use crate::render::renderer2d::{copy_and_draw, MAX_VERTICES, QUAD_INDEX_ARRAY};
 use crate::render::shader::Shader;
-use crate::vec4;
+use crate::{vec4, Vec2};
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct QuadVertex {
@@ -39,13 +39,7 @@ impl QuadRenderer {
     }
   }
 
-  pub fn draw_quad(
-    &mut self,
-    frame: &mut Frame,
-    view_projection: &ViewProjection,
-    position: Position,
-    size: Vector2<f32>,
-  ) {
+  pub fn draw_quad(&mut self, frame: &mut Frame, view_projection: &ViewProjection, position: Position, size: Vec2) {
     let position = Vector3::new(position.x, position.y, 0.0);
     let size = Vector3::new(size.x, size.y, 1.0);
     let translation = Matrix4::identity().prepend_translation(&position);

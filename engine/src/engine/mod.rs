@@ -14,8 +14,9 @@ use crate::engine::fps::FpsStats;
 use crate::engine::input::{set_key_state, update_input_state};
 use crate::engine::layer::Layer;
 use crate::math::vec2;
-use crate::render::renderer2d::Renderer2d;
+use crate::render::renderer::Renderer;
 use crate::render::renderer2d::text::font::FontBitmap;
+use crate::render::renderer2d::Renderer2d;
 use crate::window::set_viewport;
 
 pub mod component;
@@ -29,19 +30,21 @@ pub struct EngineContext {
   pub start_time: Instant,
   pub last_time: Instant,
 
-  pub renderer: Renderer2d,
+  pub renderer: Renderer,
+  pub renderer2d: Renderer2d,
 
   pub fps_stats: FpsStats,
 }
 
 impl EngineContext {
-  pub fn new(renderer: Renderer2d) -> Self {
+  pub fn new(renderer: Renderer, renderer2d: Renderer2d) -> Self {
     Self {
       delta_time: 0.0,
       last_time: Instant::now(),
       start_time: Instant::now(),
 
       renderer,
+      renderer2d,
 
       fps_stats: FpsStats::new(),
     }
@@ -195,10 +198,12 @@ fn create_context(display: &Display<WindowSurface>) -> EngineContext {
   let font = FontBitmap::from_bytes(display, include_bytes!("../../fonts/terminus/ter-u32n.bdf"));
   let font = Rc::new(font);
 
+  let mesh_shader = shader!(display, "../../shaders/mesh_vert.glsl", "../../shaders/mesh_frag.glsl");
   let quad_shader = shader!(display, "../../shaders/vert.glsl", "../../shaders/frag.glsl");
   let text_shader = shader!(display, "../../shaders/text_vert.glsl", "../../shaders/text_frag.glsl");
 
-  let renderer = Renderer2d::new(display, quad_shader, text_shader, font);
+  let renderer = Renderer::new(display, mesh_shader);
+  let renderer2d = Renderer2d::new(display, quad_shader, text_shader, font);
 
-  EngineContext::new(renderer)
+  EngineContext::new(renderer, renderer2d)
 }

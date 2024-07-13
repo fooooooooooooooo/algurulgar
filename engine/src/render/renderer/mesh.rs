@@ -1,7 +1,14 @@
-use glium::{implement_vertex, index::PrimitiveType, Display, IndexBuffer, VertexBuffer};
-use glutin::surface::WindowSurface;
+use std::ops::Deref;
 
-use crate::render::shader::Shader;
+use glium::index::PrimitiveType;
+use glium::uniforms::Uniforms;
+use glium::{implement_vertex, uniform, Display, Frame, IndexBuffer, Surface, VertexBuffer};
+use glutin::surface::WindowSurface;
+use nalgebra::Matrix4;
+
+use crate::mesh::obj::Obj;
+use crate::render::shader::{Shader, DRAW_PARAMETERS};
+use crate::ViewProjection;
 
 pub const MAX_TRIS: usize = 20000;
 pub const MAX_VERTICES: usize = MAX_TRIS * 3;
@@ -45,17 +52,41 @@ impl Mesh {
   pub fn new(vertices: Vec<Vertex>, indices: Vec<u16>) -> Self {
     Self { vertices, indices }
   }
+
+  pub fn load_obj(obj: &str) -> Self {
+    let reader = std::io::BufReader::new(obj.as_bytes());
+    let obj = Obj::parse(reader).unwrap();
+
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+
+    const COLORS: [[f32; 4]; 3] = [[1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0], [0.0, 0.0, 1.0, 1.0]];
+
+    for (i, vertex) in obj.vertices.iter().enumerate() {
+      vertices.push(Vertex {
+        position: [vertex.position.x, vertex.position.y, vertex.position.z],
+        color: COLORS[i % COLORS.len()],
+      });
+    }
+
+    for edge in obj.edges {
+      indices.push(edge.0);
+      indices.push(edge.1);
+    }
+
+    Self { vertices, indices }
+  }
 }
 
 pub struct MeshRenderer {
   vertex_array: Vec<Vertex>,
   vertex_buffer: VertexBuffer<Vertex>,
   index_buffer: IndexBuffer<u16>,
-  shader: Box<Shader>,
+  shader: Shader,
 }
 
 impl MeshRenderer {
-  pub fn new(display: &Display<WindowSurface>, shader: Box<Shader>) -> Self {
+  pub fn new(display: &Display<WindowSurface>, shader: Shader) -> Self {
     let vertex_array = Vec::with_capacity(MAX_VERTICES);
     let vertex_buffer = VertexBuffer::empty_dynamic(display, MAX_VERTICES).unwrap();
 
@@ -68,4 +99,84 @@ impl MeshRenderer {
       shader,
     }
   }
+
+  pub fn draw_mesh(
+    &mut self,
+    frame: &mut glium::Frame,
+    view_projection: &ViewProjection,
+    transform: Matrix4<f32>,
+    mesh: &Mesh,
+  ) {
+    self.vertex_array.clear();
+    self.vertex_array.extend_from_slice(&mesh.vertices);
+
+    let uniforms = uniform! {
+      u_view_projection: *view_projection.as_ref(),
+      u_transform: *transform.as_ref(),
+    };
+
+    copy_and_draw(
+      &mut self.vertex_buffer,
+      &mut self.vertex_array,
+      &self.index_buffer,
+      &self.shader,
+      frame,
+      &uniforms,
+    );
+  }
+
+  pub fn flush(&mut self, _frame: &mut Frame, _view_projection: &ViewProjection) {
+    // if !self.vertex_array.is_empty() {
+    //   let uniforms = uniform! {
+    //     u_view_projection: *view_projection.as_ref(),
+    //   };
+
+    //   copy_and_draw(
+    //     &mut self.vertex_buffer,
+    //     &mut self.vertex_array,
+    //     &self.index_buffer,
+    //     &self.shader,
+    //     frame,
+    //     &uniforms,
+    //   );
+    // }
+  }
+
+  pub fn clear(&mut self) {
+    unsafe {
+      self.vertex_array.set_len(0);
+    }
+  }
+}
+
+pub(crate) fn copy_and_draw<V: Copy, U: Uniforms>(
+  vertex_buffer: &mut VertexBuffer<V>,
+  vertex_array: &mut Vec<V>,
+  index_buffer: &IndexBuffer<u16>,
+  shader: &Shader,
+  frame: &mut Frame,
+  uniforms: &U,
+) {
+  if vertex_array.len() == vertex_buffer.len() {
+    vertex_buffer.write(vertex_array.as_slice());
+  } else {
+    vertex_buffer.invalidate();
+
+    unsafe {
+      vertex_buffer
+        .slice_mut(0..vertex_array.len())
+        .unwrap_unchecked()
+        .write(vertex_array.as_slice());
+    }
+  }
+
+  frame
+    .draw(
+      vertex_buffer.deref(),
+      index_buffer,
+      shader.program(),
+      uniforms,
+      &DRAW_PARAMETERS,
+    )
+    .unwrap();
 }
