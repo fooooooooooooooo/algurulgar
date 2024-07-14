@@ -10,9 +10,11 @@ use nalgebra::Vector2;
 
 use crate::math::u_sqrt;
 
+const PIPES: [char; 5] = ['│', '└', '┘', '┌', '┐'];
+
 const CHAR_START: usize = 32;
 const CHAR_END: usize = 127;
-const CHARS: usize = CHAR_END - CHAR_START;
+const CHARS: usize = CHAR_END - CHAR_START + PIPES.len();
 
 const fn generate_font_charset() -> [char; CHARS] {
   let mut chars: [char; CHARS] = ['\0'; CHARS];
@@ -20,6 +22,12 @@ const fn generate_font_charset() -> [char; CHARS] {
 
   while i < CHARS {
     chars[i] = (i + CHAR_START) as u8 as char;
+    i += 1;
+  }
+
+  let mut i = 0;
+  while i < PIPES.len() {
+    chars[CHARS - PIPES.len() + i] = PIPES[i];
     i += 1;
   }
 
@@ -137,7 +145,10 @@ fn generate_font_atlas(font: &Font) -> FontAtlas {
   let mut atlas: Vec<u32> = vec![0; width * height];
 
   for c in CHARSET.iter() {
-    let glyph = font.glyphs().get(c).unwrap_or_else(|| font.glyphs().get(&' ').unwrap());
+    let glyph = font.glyphs().get(c).unwrap_or_else(|| {
+      log::info!("missing glyph for character: {}", c);
+      font.glyphs().get(&' ').unwrap()
+    });
 
     let CharInfo { atlas_position, .. } = char_info.get(c).unwrap();
 

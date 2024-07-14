@@ -28,7 +28,7 @@ pub mod update;
 pub mod window;
 
 pub mod mesh;
-pub mod egui_layer;
+pub mod debug;
 
 pub const VSYNC: bool = true;
 

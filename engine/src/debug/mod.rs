@@ -1,3 +1,5 @@
+pub mod widgets;
+
 use egui::{Context, ViewportId};
 use egui_glium::EguiGlium;
 use glium::glutin::surface::WindowSurface;

@@ -1,4 +1,5 @@
-use algurulgar::egui::{Color32, Context};
+use algurulgar::debug::widgets::{MatrixWidget, VectorWidget};
+use algurulgar::egui::{Color32, Context, Widget};
 use algurulgar::engine::events::EventHandler;
 use algurulgar::engine::input::{key_pressed, last_key_pressed, mouse_position};
 use algurulgar::glium::Frame;
@@ -162,12 +163,6 @@ impl Layer for SandboxLayer {
       &text_params,
     );
 
-    renderer2d.draw_text(
-      &self.camera.camera().view_projection().to_string(),
-      vec2(-0.95, 0.0),
-      &text_params,
-    );
-
     // display bunny pos, rot, scale, and then the transform
     renderer2d.draw_text(&self.bunny_debug, vec2(-0.95, -0.8), &text_params);
 
@@ -176,7 +171,37 @@ impl Layer for SandboxLayer {
     renderer2d.finish();
   }
 
-  fn egui(&mut self, _context: &mut EngineContext, ctx: Context) {
+  fn egui(&mut self, context: &mut EngineContext, ctx: Context) {
+    egui::TopBottomPanel::top("top_panel").show(&ctx, |ui| {
+      // fps
+      ui.monospace(context.fps_stats.text.clone());
+
+      ui.label(format!("Mouse: {:?}", mouse_position()));
+      ui.label(format!("Key: {:?}", last_key_pressed()));
+
+      ui.label("Camera:");
+      MatrixWidget::new(self.camera.camera().view_projection()).ui(ui);
+
+      // bunny
+      ui.horizontal(|ui| {
+        ui.label("Bunny Pos:");
+        VectorWidget::new(&self.bunny_pos).ui(ui);
+      });
+
+      ui.horizontal(|ui| {
+        ui.label("Bunny Rot:");
+        VectorWidget::new(&self.bunny_rot).ui(ui);
+      });
+
+      ui.horizontal(|ui| {
+        ui.label("Bunny Scale:");
+        VectorWidget::new(&self.bunny_scale).ui(ui);
+      });
+
+      ui.label("Bunny Trans:");
+      MatrixWidget::new(&self.bunny_trans).ui(ui);
+    });
+
     egui::Window::new("hello awa").show(&ctx, |ui| {
       ui.label("hello awa");
       ui.colored_label(Color32::LIGHT_GREEN, "hello awa");

@@ -11,7 +11,7 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::WindowId;
 
 use crate::app::{App, AppState};
-use crate::egui_layer::Egui;
+use crate::debug::Egui;
 use crate::engine::fps::FpsStats;
 use crate::engine::input::{set_key_state, update_input_state};
 use crate::engine::layer::Layer;
