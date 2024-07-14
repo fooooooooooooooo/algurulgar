@@ -46,15 +46,22 @@ pub struct RendererContext<'a> {
 
 impl<'a> RendererContext<'a> {
   /// Draw vertex buffer
-  pub fn draw(&mut self, position: &Vec3, mesh: &Mesh) {
-    let mut transform = Matrix4::identity();
+  pub fn draw(&mut self, mesh: &Mesh, position: &Vec3, rotation: &Vec3, scale: &Vec3) {
+    let mut transform = Matrix4::new_rotation(*rotation);
     transform.append_translation_mut(position);
-    transform.transpose_mut();
+    transform.append_nonuniform_scaling_mut(scale);
 
     self
       .renderer
       .mesh_renderer
       .draw_mesh(self.frame, &self.view_projection, transform, mesh)
+  }
+
+  pub fn draw_transform(&mut self, mesh: &Mesh, transform: &Matrix4<f32>) {
+    self
+      .renderer
+      .mesh_renderer
+      .draw_mesh(self.frame, &self.view_projection, *transform, mesh)
   }
 
   pub fn flush(&mut self) {

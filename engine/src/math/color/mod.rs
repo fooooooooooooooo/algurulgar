@@ -22,8 +22,11 @@ impl Color {
     [self.0, self.1, self.2, self.3]
   }
 
-  pub fn opacity(&self, arg: f64) -> Color {
-    Color(self.0, self.1, self.2, self.3 * arg as f32)
+  /// Multiply alpha channel by a factor
+  ///
+  /// Expecting a value `0.0 .. 1.0`
+  pub fn opacity(&self, factor: f64) -> Color {
+    Color(self.0, self.1, self.2, self.3 * factor as f32)
   }
 }
 

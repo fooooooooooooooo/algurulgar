@@ -47,7 +47,7 @@ impl OrthoCamera {
   }
 
   pub fn set_projection(&mut self, left: f32, right: f32, bottom: f32, top: f32) {
-    self.projection = Projection::new_orthographic(left, right, bottom, top, -1.0, 1.0);
+    self.projection = Projection::new_orthographic(left, right, bottom, top, -100.0, 100.0);
     self.view_projection = self.projection * self.view;
   }
 

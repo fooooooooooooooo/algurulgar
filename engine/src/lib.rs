@@ -13,7 +13,7 @@ pub use log::{debug, error, info, trace, warn};
 pub use math::*;
 use pretty_env_logger::init;
 pub use render::camera::ortho::{OrthoCamera, OrthoCameraController};
-pub use {glium, glutin, nalgebra, winit};
+pub use {glium, glutin, nalgebra, winit, egui};
 
 #[allow(unused_imports)]
 use crate::macros::*;
@@ -28,6 +28,7 @@ pub mod update;
 pub mod window;
 
 pub mod mesh;
+pub mod egui_layer;
 
 pub const VSYNC: bool = true;
 

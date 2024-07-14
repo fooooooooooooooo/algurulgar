@@ -6,6 +6,7 @@ use std::num::{ParseFloatError, ParseIntError};
 use crate::Vec3;
 
 #[derive(Debug)]
+#[deprecated = "incomplete implementation, use tobj::load_obj instead"]
 pub struct Obj {
   pub name: Option<String>,
   pub vertices: Vec<Vertex>,
@@ -39,6 +40,7 @@ pub enum Error {
   Io(#[from] std::io::Error),
 }
 
+#[allow(deprecated)]
 impl Obj {
   pub fn parse<R: BufRead>(reader: R) -> Result<Self, Error> {
     let mut name = None;

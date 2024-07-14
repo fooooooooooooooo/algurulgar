@@ -1,7 +1,9 @@
+use algurulgar::egui::{Color32, Context};
 use algurulgar::engine::events::EventHandler;
 use algurulgar::engine::input::{key_pressed, last_key_pressed, mouse_position};
 use algurulgar::glium::Frame;
 use algurulgar::math::Position;
+use algurulgar::nalgebra::Matrix4;
 use algurulgar::render::camera::ortho::OrthoCameraController;
 use algurulgar::render::renderer::mesh::Mesh;
 use algurulgar::render::renderer2d::text::TextParams;
@@ -9,7 +11,7 @@ use algurulgar::update::UpdateHandler;
 use algurulgar::winit::event::WindowEvent;
 use algurulgar::winit::keyboard::KeyCode;
 use algurulgar::winit::window::Window;
-use algurulgar::{init_logger, vec2, Engine, EngineContext, Layer, Vec3};
+use algurulgar::{egui, init_logger, vec2, vec3, Engine, EngineContext, Layer, Vec3};
 use log::info;
 
 struct SandboxLayer {
@@ -17,8 +19,14 @@ struct SandboxLayer {
   pos: Position,
   scale: f32,
 
-  cube: Mesh,
-  cube_pos: Vec3,
+  bunny: Mesh,
+  bunny_pos: Vec3,
+  bunny_rot: Vec3,
+  bunny_scale: Vec3,
+
+  bunny_trans: Matrix4<f32>,
+
+  bunny_debug: String,
 }
 
 fn main() {
@@ -33,14 +41,18 @@ fn main() {
 
 impl SandboxLayer {
   pub fn new() -> Self {
-    let cube = Mesh::load_obj(include_str!("../../assets/cube.obj"));
+    let bunny = Mesh::load_obj(include_str!("../../assets/bunny.obj"));
 
     Self {
       camera: OrthoCameraController::default(),
       pos: Position::zeros(),
       scale: 0.05,
-      cube,
-      cube_pos: Vec3::zeros(),
+      bunny,
+      bunny_pos: Vec3::zeros(),
+      bunny_rot: Vec3::zeros(),
+      bunny_scale: vec3(2.0, 2.0, 2.0),
+      bunny_trans: Matrix4::identity(),
+      bunny_debug: String::new(),
     }
   }
 }
@@ -62,24 +74,63 @@ impl Layer for SandboxLayer {
       println!("scale: {}", self.scale);
     }
 
-    // move cube
+    // move bunny
     if key_pressed(KeyCode::ArrowUp) {
-      self.cube_pos.y += 0.01;
+      self.bunny_pos.y += 0.01;
     } else if key_pressed(KeyCode::ArrowDown) {
-      self.cube_pos.y -= 0.01;
+      self.bunny_pos.y -= 0.01;
     }
 
     if key_pressed(KeyCode::ArrowLeft) {
-      self.cube_pos.x -= 0.01;
+      self.bunny_pos.x -= 0.01;
     } else if key_pressed(KeyCode::ArrowRight) {
-      self.cube_pos.x += 0.01;
+      self.bunny_pos.x += 0.01;
     }
 
     if key_pressed(KeyCode::BracketLeft) {
-      self.cube_pos.z += 0.01;
+      self.bunny_pos.z += 0.01;
     } else if key_pressed(KeyCode::BracketRight) {
-      self.cube_pos.z -= 0.01;
+      self.bunny_pos.z -= 0.01;
     }
+
+    // rotate bunny
+    if key_pressed(KeyCode::KeyI) {
+      self.bunny_rot.x += 0.01;
+    } else if key_pressed(KeyCode::KeyK) {
+      self.bunny_rot.x -= 0.01;
+    }
+
+    if key_pressed(KeyCode::KeyJ) {
+      self.bunny_rot.y += 0.01;
+    } else if key_pressed(KeyCode::KeyL) {
+      self.bunny_rot.y -= 0.01;
+    }
+
+    if key_pressed(KeyCode::KeyU) {
+      self.bunny_rot.z += 0.01;
+    } else if key_pressed(KeyCode::KeyO) {
+      self.bunny_rot.z -= 0.01;
+    }
+
+    // scale bunny
+    if key_pressed(KeyCode::KeyN) {
+      self.bunny_scale.x += 0.01;
+      self.bunny_scale.y += 0.01;
+      self.bunny_scale.z += 0.01;
+    } else if key_pressed(KeyCode::KeyM) {
+      self.bunny_scale.x -= 0.01;
+      self.bunny_scale.y -= 0.01;
+      self.bunny_scale.z -= 0.01;
+    }
+
+    self.bunny_trans = Matrix4::new_rotation(self.bunny_rot);
+    self.bunny_trans.append_translation_mut(&self.bunny_pos);
+    self.bunny_trans.append_nonuniform_scaling_mut(&self.bunny_scale);
+
+    self.bunny_debug = format!(
+      "pos: {:?}\nrot: {:?}\nscale: {:?}\ntransform: {}",
+      self.bunny_pos, self.bunny_rot, self.bunny_scale, self.bunny_trans
+    );
   }
 
   fn draw(&mut self, context: &mut EngineContext, frame: &mut Frame) {
@@ -89,7 +140,7 @@ impl Layer for SandboxLayer {
 
     let mut renderer = context.renderer.begin(&self.camera, frame);
 
-    renderer.draw(&self.cube_pos, &self.cube);
+    renderer.draw_transform(&self.bunny, &self.bunny_trans);
 
     renderer.finish();
 
@@ -117,12 +168,24 @@ impl Layer for SandboxLayer {
       &text_params,
     );
 
+    // display bunny pos, rot, scale, and then the transform
+    renderer2d.draw_text(&self.bunny_debug, vec2(-0.95, -0.8), &text_params);
+
     renderer2d.draw_quad(self.pos, vec2(0.5, 0.5));
 
     renderer2d.finish();
   }
 
-  fn handle_window_event(&mut self, _context: &mut EngineContext, event: &WindowEvent, window: &Window) {
+  fn egui(&mut self, _context: &mut EngineContext, ctx: Context) {
+    egui::Window::new("hello awa").show(&ctx, |ui| {
+      ui.label("hello awa");
+      ui.colored_label(Color32::LIGHT_GREEN, "hello awa");
+    });
+  }
+
+  fn handle_window_event(&mut self, _context: &mut EngineContext, event: &WindowEvent, window: &Window) -> bool {
     self.camera.handle_event(event, window);
+
+    false
   }
 }

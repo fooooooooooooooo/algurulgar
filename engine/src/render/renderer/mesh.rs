@@ -78,9 +78,6 @@ impl Mesh {
       indices.push(*index as u16);
     }
 
-    println!("vertices: {:?}", vertices);
-    println!("indices: {:?}", indices);
-
     Self { vertices, indices }
   }
 }
@@ -117,9 +114,15 @@ impl MeshRenderer {
     self.vertex_array.clear();
     self.vertex_array.extend_from_slice(&mesh.vertices);
 
+    self
+      .index_buffer
+      .slice(0..mesh.indices.len())
+      .unwrap()
+      .write(&mesh.indices);
+
     let uniforms = uniform! {
       u_view_projection: *view_projection.as_ref(),
-      u_transform: *transform.as_ref(),
+      u_model: *transform.as_ref(),
     };
 
     copy_and_draw(

@@ -8,7 +8,7 @@ use glutin::prelude::*;
 use glutin::surface::{SurfaceAttributesBuilder, SwapInterval, WindowSurface};
 use glutin_winit::DisplayBuilder;
 use raw_window_handle::HasWindowHandle;
-use winit::event_loop::ActiveEventLoop;
+use glutin_winit::event_loop::GlutinEventLoop;
 use winit::window::{Window, WindowAttributes};
 
 use crate::window::set_viewport;
@@ -20,7 +20,7 @@ pub struct AppState {
 }
 
 impl AppState {
-  pub fn new(event_loop: &ActiveEventLoop, window_title: &'static str, visible: bool) -> AppState {
+  pub fn new(event_loop: &impl GlutinEventLoop, window_title: &'static str, visible: bool) -> AppState {
     let window_attributes = WindowAttributes::default()
       .with_title(window_title)
       .with_visible(visible);
